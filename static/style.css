@@ -1,0 +1,25 @@
+[v-cloak] {
+    display: none;
+}
+.active-room {
+    background-color: #dae0e5 !important;
+}
+.splash {
+    background-image: linear-gradient(#0069d9, #fff);
+}
+.chatbox {
+    max-width: 80%;
+    background-color: #fff;
+    margin-right: auto;
+    margin-left: 0;
+}
+.chatbox.by-me {
+    margin-left: auto;
+    margin-right: 0;
+    background-color: #e2eff6;
+}
+@media (min-width: 578px) {
+    .container {
+        max-width: 540px;
+    }
+}

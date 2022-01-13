@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Burung-Chat</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/asset/style.css">
+    <link rel="shortcut icon" href="/asset/favicon.ico" type="image/x-icon">
+</head>
+<body class="bg-dark">
+    <div id="root" class="container px-0" v-cloak>
+        <template v-if="!username">
+            <div class="card border-0 splash text-white" style="height: 100vh;">
+                <div class="card-header text-center py-5 px-3 border-0">
+                        <h1 class="display-4">Burung-Chat</h1>
+                        <p class="lead">Another Messenger App</p>
+                </div>
+                <div class="card-body">
+                    <div class="mt-4 mx-4">
+                        <input v-model="inputUsername" @keyup.enter="login()" type="text" class="form-control mb-3 text-center" placeholder="username">
+                        <button @click="login()" class="btn btn-primary btn-block">
+                            Login
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+        <template v-if="username">
+            <template v-if="!currentRoom.ID">
+                <div class="card border-0" style="height: 100vh;">
+                    <div class="card-header text-white bg-primary">
+                        <h5 class="mb-0">
+                            <button @click="findRoom()" ref="findBtn" class="btn btn-primary btn-sm float-right">
+                                <i class="bi-search"></i>
+                                Find
+                            </button>
+                            Rooms
+                        </h5>
+                    </div>
+                    <div class="card-body p-0 bg-light" style="overflow-y: auto;">
+                        <ul v-show="!fetchingRoom" class="list-group list-group-flush">
+                            <template v-for="r in roomList">
+                                <a v-if="r.Active == 1" @click="openRoom(r.ID)" href="javascript:;" class="list-group-item bg-light" :class="{'active-room': r.ID == currentRoom.ID}">
+                                    <template v-if="r.Type == 'p2p'">
+                                        <i class="bi-person"></i> &nbsp; {{ r.Label | p2pLabel }}
+                                    </template>
+                                    <template v-if="r.Type == 'group'">
+                                        <i class="bi-people"></i> &nbsp; {{ r.Label }}
+                                    </template>
+                                </a>
+                            </template>
+                        </ul>
+                    </div>
+                    <div class="card-footer text-muted">
+                        <button @click="logout()" class="btn btn-outline-danger btn-sm float-right">Logout</button>
+                        <i class="bi-person"></i>
+                        <b>{{ username }}</b>
+                    </div>
+                </div>
+            </template>
+            <template v-if="currentRoom.ID">
+                <div v-if="currentRoom.ID != 'find'" class="card border-0" style="height: 100vh;">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <button @click="backBtn()" class="btn btn-primary btn-sm">
+                                <i class="bi-arrow-left"></i>
+                            </button>
+                            <template v-if="currentRoom.Type == 'p2p'">
+                                <i class="bi-person float-right"></i> &nbsp; {{ currentRoom.Label | p2pLabel }}
+                            </template>
+                            <template v-if="currentRoom.Type == 'group'">
+                                <i class="bi-people float-right"></i> &nbsp; {{ currentRoom.Label }}
+                            </template>
+                        </h5>
+                    </div>
+                    <div id="msg-list" class="card-body" style="overflow-y: auto;background: #e5ddd5">
+                        <div class="d-flex flex-column" v-for="m in messageList">
+                            <div class="border py-2 px-3 mb-2 chatbox" :class="{'by-me': m.From == username}">
+                                <p class="text-muted small mb-2">
+                                    {{ m.From }} ({{ m.CreatedAt | prettyDate }})
+                                </p>
+                                <p class="mb-0">
+                                    {{ m.Message }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="input-group">
+                            <input @keyup.enter="sendMessage()" type="text" class="form-control" v-model="inputText">
+                            <div class="input-group-append">
+                                <button @click="sendMessage()" class="btn btn-primary">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="currentRoom.ID == 'find'" class="card border-0" style="height: 100vh;">
+                    <div class="card-header text-white bg-primary">
+                        <h5 class="mb-0">
+                            <button @click="backBtn()" class="btn btn-primary btn-sm">
+                                <i class="bi-arrow-left"></i>
+                            </button>
+                            &nbsp; Find
+                        </h5>
+                    </div>
+                    <div class="card-body" style="overflow-y: auto;">
+                        <h6 class="mb-3">Find Group</h6>
+                        <div>
+                            <button v-for="g in groupList" @click="joinRoom(g.ID)" class="btn btn-light btn-sm mr-2 mb-2">
+                                {{ g.Label }}
+                            </button>
+                            <button @click="toggleCreateGroup()" class="btn btn-outline-primary btn-sm mr-2 mb-2">
+                                <i class="bi-plus"></i>
+                            </button>
+                        </div>
+                        <hr>
+                        <h6 class="mb-3">Find User</h6>
+                        <div>
+                            <button v-for="u in userList" @click="createP2PRoom(u.Username)" class="btn btn-light btn-sm mr-2 mb-2">
+                                {{ u.Username }}
+                            </button>
+                        </div>
+                    </div>
+                    <div v-show="showCreateGroupForm" class="card-footer">
+                        <h6 class="mb-3">Create Group</h6>
+                        <div class="form-group">
+                            <input v-model="inputGroupName" ref="inputGroupName" type="text" class="form-control mb-2" placeholder="Group Name">
+                            <button @click="createGroup()" class="btn btn-primary">
+                                Create
+                            </button>
+                            <button @click="toggleCreateGroup()" class="btn btn-link">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </template>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="/asset/main.js">
+    </script>
+</body>
+</html>
