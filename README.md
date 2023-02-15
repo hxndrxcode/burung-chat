@@ -132,5 +132,3 @@ go build -o burung-chat main.go
 ## Demo
 
 We have deployed three instance using docker-compose. And we also have tested them by shutting down one or two instances. The result was pretty good. All connection was covered by the running instances seamlessly.
-
-You can try full working demo [here](http://147.182.132.79:8080)
